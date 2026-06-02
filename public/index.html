@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STG Aerospace — FAI Generator</title>
+<style>
+  :root {
+    --blue: #003087;
+    --light-blue: #e8f0fb;
+    --border: #ccc;
+    --green: #1a6e2e;
+    --red: #c0392b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6fa; color: #222; font-size: 14px; }
+
+  header {
+    background: var(--blue); color: white; padding: 14px 30px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header span { font-size: 13px; opacity: 0.8; }
+
+  .container { max-width: 1000px; margin: 24px auto; padding: 0 20px; }
+
+  .card {
+    background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .card-header {
+    background: var(--blue); color: white; padding: 10px 20px;
+    font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px;
+  }
+  .card-header .step {
+    background: white; color: var(--blue); border-radius: 50%;
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 13px; flex-shrink: 0;
+  }
+  .card-body { padding: 20px; }
+
+  .grid { display: grid; gap: 14px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+  input, select, textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: 4px; font-size: 14px; font-family: Arial, sans-serif;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,48,135,0.15);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .radio-group { display: flex; gap: 20px; align-items: center; padding-top: 6px; }
+  .radio-group label { font-size: 14px; font-weight: 400; color: #222; display: flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; }
+  .radio-group input[type=radio] { width: auto; }
+
+  .badge {
+    display: inline-block; background: var(--light-blue); color: var(--blue);
+    padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;
+    margin-left: 8px;
+  }
+
+  .dim-row {
+    display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: end;
+    padding: 10px; background: var(--light-blue); border-radius: 6px; margin-bottom: 8px;
+  }
+  .dim-row .dim-label { font-weight: 600; color: var(--blue); font-size: 13px; }
+  .dim-row .dim-nominal { font-size: 12px; color: #666; }
+
+  .index-row {
+    display: grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap: 8px; align-items: center;
+    padding: 8px; background: #fafafa; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px;
+  }
+  .index-row label { margin: 0; }
+
+  .btn {
+    padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 14px; font-weight: 700; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: #002070; }
+  .btn-danger { background: var(--red); color: white; font-size: 12px; padding: 4px 10px; }
+  .btn-add { background: #e8f0fb; color: var(--blue); border: 1px dashed var(--blue); font-size: 12px; padding: 6px 14px; }
+
+  .actions { display: flex; gap: 12px; align-items: center; padding: 20px; }
+
+  .status {
+    display: none; padding: 12px 16px; border-radius: 6px; margin-top: 12px; font-weight: 600;
+  }
+  .status.success { background: #d4edda; color: var(--green); display: block; }
+  .status.error { background: #f8d7da; color: var(--red); display: block; }
+
+  .hint { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .separator { border: none; border-top: 1px solid #eee; margin: 14px 0; }
+
+  #familyBadge { font-size: 13px; color: var(--blue); font-weight: 700; }
+
+  .hidden { display: none !important; }
+
+  .partial-section { background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px; padding: 14px; margin-top: 10px; }
+
+  .mat-row { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr 36px; gap: 8px; align-items: end; margin-bottom: 8px; }
+  .mat-row input { font-size: 13px; }
+
+  .batch-banner {
+    display: none; padding: 8px 12px; border-radius: 4px; font-size: 13px; margin-bottom: 10px;
+  }
+  .batch-banner.success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #1a6e2e; display: block; }
+  .batch-banner.warn    { background: #fff8e1; border: 1px solid #ffe082; color: #7a5c00; display: block; }
+  .batch-banner.error   { background: #fdecea; border: 1px solid #ef9a9a; color: #c0392b; display: block; }
+
+  .btn-find-wo { background: #1565c0; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .btn-find-wo:hover { background: #0d47a1; }
+  .btn-find-wo:disabled { background: #90a4ae; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>STG Aerospace — FAI Generator</h1>
+    <span>AS9102 Rev C · Forms 1, 2 &amp; 3 Auto-Generator</span>
+  </div>
+</header>
+
+<div class="container">
+<form id="faiForm">
+
+  <!-- STEP 1: FAIR Identity -->
+  <div class="card">
+    <div class="card-header"><span class="step">1</span> FAIR Identity</div>
+    <div class="card-body">
+      <div class="grid grid-4">
+        <div>
+          <label>FAIR Number *</label>
+          <input type="text" id="fairId" name="fairId" placeholder="FAI-103" required>
+          <div class="hint">Auto-suggested — confirm before generating</div>
+        </div>
+        <div>
+          <label>Part Number *</label>
+          <input type="text" id="partNumber" name="partNumber" placeholder="SG9904-1237" required>
+          <div id="familyBadge" class="hint"></div>
+        </div>
+        <div>
+          <label>Part Name</label>
+          <input type="text" id="partName" name="partName" placeholder="Auto-filled from part family">
+        </div>
+        <div>
+          <label>Serial Number</label>
+          <input type="text" id="serialNumber" name="serialNumber" value="N/A">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Drawing & Manufacturing -->
+  <div class="card">
+    <div class="card-header"><span class="step">2</span> Drawing &amp; Manufacturing Info</div>
+    <div class="card-body">
+      <div class="grid grid-4">
+        <div>
+          <label>Part Revision Level *</label>
+          <input type="text" id="partRev" name="partRev" placeholder="e.g. F, U, A1">
+        </div>
+        <div>
+          <label>Drawing Number</label>
+          <input type="text" id="drawingNumber" name="drawingNumber" placeholder="Auto-filled">
+        </div>
+        <div>
+          <label>Drawing Revision Level</label>
+          <input type="text" id="drawingRev" name="drawingRev" placeholder="Auto-filled">
+        </div>
+        <div>
+          <label>Additional Changes</label>
+          <input type="text" id="additionalChanges" name="additionalChanges" value="N/A">
+        </div>
+      </div>
+      <div class="grid grid-3" style="margin-top:14px">
+        <div>
+          <label>Works Order (WO#) *</label>
+          <input type="text" id="woNumber" name="woNumber" placeholder="e.g. 23252">
+        </div>
+        <div>
+          <label>P.O. Number</label>
+          <input type="text" id="poNumber" name="poNumber" placeholder="e.g. K25034-P1M">
+        </div>
+        <div>
+          <label>Manufacturing Process Reference</label>
+          <input type="text" id="mfgProcessRef" name="mfgProcessRef" placeholder="Auto-filled: Spec 4006 / WO# ...">
+          <div class="hint">Leave blank to auto-build from Spec 4006 + WO#</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: FAI Type -->
+  <div class="card">
+    <div class="card-header"><span class="step">3</span> FAI Type &amp; Reason</div>
+    <div class="card-body">
+      <div class="grid grid-2">
+        <div>
+          <label>Assembly Type</label>
+          <div class="radio-group">
+            <label><input type="radio" name="isAssembly" value="true" checked> Assembly FAI</label>
+            <label><input type="radio" name="isAssembly" value="false"> Detail Part</label>
+          </div>
+        </div>
+        <div>
+          <label>FAI Category</label>
+          <div class="radio-group">
+            <label><input type="radio" name="fairType" value="Full" id="fullFai" checked onchange="togglePartial()"> Full FAI</label>
+            <label><input type="radio" name="fairType" value="Partial" id="partialFai" onchange="togglePartial()"> Partial FAI</label>
+          </div>
+        </div>
+      </div>
+      <div id="partialSection" class="partial-section hidden" style="margin-top:14px">
+        <div class="grid grid-2">
+          <div>
+            <label>Baseline Part Number (incl. revision)</label>
+            <input type="text" id="baselinePart" name="baselinePart" placeholder="e.g. SG9904-1237 Rev U">
+          </div>
+          <div>
+            <label>Reason for Partial FAI *</label>
+            <input type="text" id="fairReason" name="fairReason" placeholder="e.g. Change of supplier">
+          </div>
+        </div>
+      </div>
+      <div id="fullReasonRow" style="margin-top:14px">
+        <label>Reason for Full FAI *</label>
+        <input type="text" id="fullFaiReason" name="fairReason" placeholder="e.g. Relocation of manufacturing facilities" value="Relocation of manufacturing facilities">
+      </div>
+
+      <!-- SG9904 standard only: Stop End -->
+      <div id="stopEndRow" class="hidden" style="margin-top:14px">
+        <label>Stop End Part Number *</label>
+        <input type="text" id="stopEndPn" name="stopEndPn" placeholder="e.g. SG9901">
+        <div class="hint">Enter the stop end PN used on this assembly (e.g. SG9901, SG9430)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Dimensions (user measurement inputs) -->
+  <div class="card" id="dimsCard">
+    <div class="card-header"><span class="step">4</span> Measured Dimensions <span class="badge" id="dimsPartBadge"></span></div>
+    <div class="card-body" id="dimsBody">
+      <p style="color:#888; font-size:13px">Select a part number above to see the required measurements.</p>
+    </div>
+  </div>
+
+  <!-- STEP 5: Sub-Assembly Index -->
+  <div class="card" id="indexCard">
+    <div class="card-header"><span class="step">5</span> Sub-Assembly Index (Form 1, Field 15-18)</div>
+    <div class="card-body">
+      <div id="indexRows"></div>
+      <button type="button" class="btn btn-add" onclick="addIndexRow()">+ Add Row</button>
+      <div class="hint" style="margin-top:6px">Auto-filled from part family. Edit as needed. Leave FAIR Identifier blank if not yet assigned.</div>
+    </div>
+  </div>
+
+  <!-- STEP 6: Form 2 Materials & Batch Numbers -->
+  <div class="card" id="materialsCard">
+    <div class="card-header">
+      <span class="step">6</span> Form 2: Materials &amp; Batch/CoC Numbers
+      <button type="button" id="findWoBtn" class="btn-find-wo" style="margin-left:auto" onclick="lookupWoBatches()">Find Batch Numbers from WO</button>
+    </div>
+    <div class="card-body">
+      <div id="batchBanner" class="batch-banner"></div>
+      <div style="display:grid; grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 36px; gap:8px; margin-bottom:4px; font-size:11px; font-weight:700; color:#555; padding:0 0 2px">
+        <span>Material / Process</span><span>Spec / Part #</span><span>Supplier</span><span>Batch / CoC #</span><span></span>
+      </div>
+      <div id="materialRows"></div>
+      <button type="button" class="btn btn-add" onclick="addMaterialRow()">+ Add Row</button>
+      <div class="hint" style="margin-top:6px">
+        Auto-filled from part family. Enter WO# above then click <strong>Find Batch Numbers</strong> to auto-populate from Q:\USA TXS\20X. FAI's and Log\WIP FAI. Edit manually if needed.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7: Sign-off -->
+  <div class="card">
+    <div class="card-header"><span class="step">7</span> Sign-off</div>
+    <div class="card-body">
+      <div class="grid grid-2">
+        <div>
+          <label>FAIR Verified By *</label>
+          <input type="text" id="verifiedBy" name="verifiedBy" placeholder="e.g. Brad Thompson">
+        </div>
+        <div>
+          <label>Verification Date *</label>
+          <input type="date" id="verifiedDate" name="verifiedDate">
+        </div>
+        <div>
+          <label>Reviewed / Approved By</label>
+          <input type="text" id="approvedBy" name="approvedBy" placeholder="e.g. V. Gopal">
+        </div>
+        <div>
+          <label>Approval Date</label>
+          <input type="date" id="approvedDate" name="approvedDate">
+        </div>
+      </div>
+      <hr class="separator">
+      <div class="grid grid-2" style="margin-top:10px">
+        <div>
+          <label>Non-Conformance Documented?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="hasNcr" value="false" checked> No</label>
+            <label><input type="radio" name="hasNcr" value="true"> Yes</label>
+          </div>
+        </div>
+        <div>
+          <label>Comments</label>
+          <textarea id="comments" name="comments" placeholder="Optional"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button type="submit" class="btn btn-primary">Generate FAI Document</button>
+    <div id="status" class="status"></div>
+  </div>
+
+</form>
+</div>
+
+<script>
+const FAMILIES = {
+  SG9904: {
+    name: 'SuperSeal Track Assembly',
+    drawingNumber: 'SG9904', drawingRev: 'U',
+    isAssembly: true,
+    variantField: 'Stop End PN',
+    index: [
+      { partNumber: 'SG9952', partName: 'DOUBLE DOT MARKER INSERT', partType: 'N/A', fairId: 'FAIR-0233' },
+      { partNumber: '', partName: 'END CAPS', partType: 'N/A', fairId: 'FAIR-1098' },
+      { partNumber: 'SG9900', partName: 'SLEEVES', partType: 'N/A', fairId: 'FAIR-2173' },
+      { partNumber: 'SG9422', partName: 'PL INSERTS', partType: 'N/A', fairId: 'FAIR-2682' },
+    ],
+    materials: [
+      { name: 'UV CURED ADHESIVE', spec: 'KRYLEX KU223', supplier: 'STG AEROSPACE', cocNumber: '' },
+    ],
+    dims: [
+      { key: 'dimLength', label: 'Length', nominal: '78.74" ±0.08"', unit: '"' },
+      { key: 'dimWeight', label: 'Weight', nominal: '237.5g/m or 2.55oz/ft', unit: 'oz/ft' },
+      { key: 'dimLabelPlacement', label: 'Marker Placement', nominal: '0.5" from end', unit: '"' },
+    ],
+  },
+  SG9904_ANGLE: {
+    name: 'SuperSeal Track Assembly (Angled)',
+    drawingNumber: 'SG9904', drawingRev: 'U',
+    isAssembly: true,
+    index: [
+      { partNumber: 'SG9952', partName: 'DOUBLE DOT MARKER INSERT', partType: 'N/A', fairId: 'FAIR-0233' },
+      { partNumber: 'SG9905', partName: 'ANGLED STOP END', partType: 'N/A', fairId: 'FAIR-706' },
+      { partNumber: 'SG9900', partName: 'SLEEVES', partType: 'N/A', fairId: 'FAIR-2173' },
+      { partNumber: 'SG9422', partName: 'PL INSERTS', partType: 'N/A', fairId: 'FAIR-2682' },
+      { partNumber: 'SG9901', partName: 'END CAPS', partType: 'N/A', fairId: 'FAIR-1098' },
+    ],
+    materials: [
+      { name: 'UV CURED ADHESIVE', spec: 'KRYLEX KU223', supplier: 'STG AEROSPACE', cocNumber: '' },
+    ],
+    dims: [
+      { key: 'dimLength', label: 'Length', nominal: 'Per drawing +0.08"/-0.00"', unit: '"' },
+      { key: 'dimAngle', label: 'Angle', nominal: 'Per drawing ± 0.5°', unit: '°' },
+      { key: 'dimWeight', label: 'Weight', nominal: '237.5g/m or 2.55oz/ft', unit: 'g/m' },
+      { key: 'dimLabelPlacement', label: 'Label Placement', nominal: '1" from either end', unit: 'mm' },
+    ],
+  },
+  SG8924: {
+    name: 'Assembly SuperSeal Ultralite',
+    drawingNumber: 'SG8924', drawingRev: 'F',
+    isAssembly: true,
+    index: [
+      { partNumber: 'SG8504-R354', partName: 'Coloured Insert (14.5mm)', partType: 'N/A', fairId: 'FAIR-958' },
+      { partNumber: 'SG8851', partName: 'Superseal Ultralite Track Sleeve', partType: 'N/A', fairId: 'FAIR-2159' },
+      { partNumber: 'SG8925', partName: 'Photoluminescent Insert Blue Emitting', partType: 'N/A', fairId: 'FAIR-1513' },
+      { partNumber: '40-00014-002', partName: '50mm x 12mm Part Mark Label', partType: 'N/A', fairId: '' },
+    ],
+    materials: [
+      { name: 'SSL Track Sleeve', spec: 'SG8851', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Coloured Insert', spec: 'SG8504', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'UV Cured Adhesive', spec: 'KRYLEX KU223', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Parts ID Label', spec: '40-00014-002', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+    ],
+    dims: [
+      { key: 'dimLength', label: 'Length', nominal: '2000mm ±2.0', unit: 'mm' },
+    ],
+  },
+  SG8854: {
+    name: 'SSUL Assembly',
+    drawingNumber: 'SG8854', drawingRev: 'F',
+    isAssembly: true,
+    index: [
+      { partNumber: 'SG8851', partName: 'Superseal Ultralite Track Sleeve', partType: 'N/A', fairId: '' },
+      { partNumber: 'SG8504-', partName: 'Coloured Insert (14.5mm)', partType: 'N/A', fairId: '' },
+      { partNumber: '40-00014-002', partName: '50mm x 12mm Part Mark Label', partType: 'N/A', fairId: '' },
+    ],
+    materials: [
+      { name: 'SSL Track Sleeve', spec: 'SG8851', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Coloured Insert', spec: 'SG8504', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'UV Cured Adhesive', spec: 'KRYLEX KU223', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Parts ID Label', spec: '40-00014-002', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+    ],
+    dims: [
+      { key: 'dimLength', label: 'Length', nominal: '2000mm ±2.0', unit: 'mm' },
+    ],
+  },
+  SG8892: {
+    name: 'SSUL Assembly',
+    drawingNumber: 'SG8892', drawingRev: 'G',
+    isAssembly: true,
+    index: [
+      { partNumber: 'SG8851', partName: 'Track, Superseal Ultralite', partType: 'N/A', fairId: 'FAIR-2159' },
+      { partNumber: 'SG8642', partName: 'Photoluminescent Insert, SSUL', partType: 'N/A', fairId: 'FAIR-3091' },
+      { partNumber: 'SG8504-', partName: 'Coloured Insert (14.5mm)', partType: 'N/A', fairId: '' },
+      { partNumber: '40-00014-002', partName: '50mm x 12mm Part Mark Label', partType: 'N/A', fairId: 'FAIR-1684' },
+      { partNumber: 'POLYKEN 108', partName: 'Adhesive Tape, Double Sided', partType: 'N/A', fairId: 'N/A' },
+    ],
+    materials: [
+      { name: 'SSL Track Sleeve', spec: 'SG8851', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'PL Insert SSUL', spec: 'SG8642', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Coloured Insert', spec: 'SG8504', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Parts ID Label', spec: '40-00014-002', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'UV Cured Adhesive', spec: 'KRYLEX KU223', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+    ],
+    dims: [
+      { key: 'dimLength', label: 'Assembled Length', nominal: '2000mm ±2.0mm', unit: 'mm' },
+      { key: 'dimWidth', label: 'Width', nominal: '18.3mm ±0.20mm', unit: 'mm' },
+      { key: 'dimHeight', label: 'Height', nominal: '4.3mm MAX', unit: 'mm' },
+      { key: 'dimMass', label: 'Mass', nominal: '90g/m MAX', unit: 'g/m' },
+    ],
+  },
+  SG8826: {
+    name: 'SuperSeal Lite Track Assembly',
+    drawingNumber: 'SG8826-1', drawingRev: 'B',
+    isAssembly: true,
+    index: [
+      { partNumber: 'SG8500', partName: 'SSL Track Sleeve', partType: 'N/A', fairId: 'FAIR-1252' },
+      { partNumber: 'SG8503', partName: 'PL Insert Lite', partType: 'N/A', fairId: 'FAIR-813618' },
+      { partNumber: 'SG8504-', partName: 'Colored Insert', partType: 'N/A', fairId: '' },
+      { partNumber: 'SG8501', partName: 'SSL Stop End', partType: 'N/A', fairId: 'FAIR-66148' },
+    ],
+    materials: [
+      { name: 'SSL Track Sleeve', spec: 'SG8500', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'PL Insert Lite', spec: 'SG8503', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'SSL Stop End', spec: 'SG8501', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'UV Cured Adhesive', spec: 'KRYLEX KU223', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Label: 50 x 12.7mm', spec: '40-00014', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+    ],
+    dims: [
+      { key: 'dimWeight', label: 'Weight', nominal: '≤115g/m or 1.23oz/ft', unit: 'g/m' },
+      { key: 'dimLength', label: 'Length (incl. end caps)', nominal: '78.86" (-0.08"/+0.10")', unit: '"' },
+    ],
+  },
+  SG8844: {
+    name: 'SuperSeal Lite Track Assembly',
+    drawingNumber: 'SG8844', drawingRev: 'B',
+    isAssembly: true,
+    index: [
+      { partNumber: 'SG8500', partName: 'SSL Track Sleeve', partType: 'N/A', fairId: '' },
+      { partNumber: 'SG8503', partName: 'PL Insert Lite', partType: 'N/A', fairId: '' },
+      { partNumber: 'SG8504-', partName: 'Colored Insert', partType: 'N/A', fairId: '' },
+      { partNumber: 'SG8501', partName: 'SSL Stop End', partType: 'N/A', fairId: '' },
+    ],
+    materials: [
+      { name: 'SSL Track Sleeve', spec: 'SG8500', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'PL Insert Lite', spec: 'SG8503', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'SSL Stop End', spec: 'SG8501', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'UV Cured Adhesive', spec: 'KRYLEX KU223', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Label: 50 x 12.7mm', spec: '40-00014', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+    ],
+    dims: [
+      { key: 'dimWeight', label: 'Weight', nominal: '≤115g/m or 1.23oz/ft', unit: 'g/m' },
+      { key: 'dimLength', label: 'Length (incl. end caps)', nominal: '78.86" (-0.08"/+0.10")', unit: '"' },
+    ],
+  },
+  '15-00013': {
+    name: '18" LRU Assembly',
+    drawingNumber: '15-00013', drawingRev: 'C3',
+    isAssembly: true,
+    index: [
+      { partNumber: '70-00041', partName: 'Tray 18" Unit', partType: 'N/A', fairId: 'DM201712011712601' },
+      { partNumber: '70-00030', partName: 'Connector End Housing', partType: 'N/A', fairId: 'DM201712011712001' },
+      { partNumber: '70-00032', partName: 'Simple End Housing', partType: 'N/A', fairId: 'DM201712011712002' },
+      { partNumber: '70-00034-003', partName: 'Lid', partType: 'N/A', fairId: 'ST 70-00034-003' },
+      { partNumber: '40-00020', partName: 'Blanking Label', partType: 'N/A', fairId: 'FAIR-1216' },
+      { partNumber: '66-00024-001', partName: 'Led Controller', partType: 'N/A', fairId: 'FN018' },
+      { partNumber: '66-00023-001', partName: 'IR Board', partType: 'N/A', fairId: 'FN005' },
+      { partNumber: '66-00069-001', partName: '18" Led Board', partType: 'N/A', fairId: '92' },
+      { partNumber: '66-00025-001', partName: 'IR Screen', partType: 'N/A', fairId: 'FN004' },
+      { partNumber: '30-00003-001', partName: 'Mounting Pad', partType: 'N/A', fairId: 'FAIR-1515' },
+      { partNumber: '30-00003-002', partName: 'Mounting Pad', partType: 'N/A', fairId: 'FAIR-1516' },
+    ],
+    materials: [
+      { name: 'Tray 18" Unit', spec: '70-00041', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Connector End Housing', spec: '70-00030', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Simple End Housing', spec: '70-00032', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Lid', spec: '70-00034-003', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Blanking Label', spec: '40-00020-001', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Led Controller', spec: '66-00024-001', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'IR Board', spec: '66-00023-001', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: '18" LED Board', spec: '66-00069-001-ASY', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'IR Screen', spec: '66-00025-001', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Mounting Pad (6mm)', spec: '30-00003-001', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Bondplus Electrical Tape', spec: 'HB 830-25', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Mounting Pad (8mm)', spec: '30-00003-002', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+    ],
+    dims: [
+      { key: 'dimLength', label: 'Length', nominal: '470.6 ±0.25mm', unit: 'mm' },
+      { key: 'dimWidth', label: 'Width', nominal: '34.4 ±0.25mm', unit: 'mm' },
+      { key: 'dimHeight', label: 'Height', nominal: '36.8 ±0.25mm', unit: 'mm' },
+      { key: 'dimMass', label: 'Weight', nominal: '≤191g', unit: 'g' },
+    ],
+  },
+  '10-00017': {
+    name: 'Enhanced 18" LRU Assembly',
+    drawingNumber: '10-00017', drawingRev: 'C2',
+    isAssembly: true,
+    index: [
+      { partNumber: '15-00013-012', partName: '18" LRU Assembly Hub', partType: 'N/A', fairId: 'FAIR-061' },
+      { partNumber: '70-00036', partName: 'Connector Module Upper', partType: 'N/A', fairId: 'DM/RF-QP-11-01' },
+      { partNumber: '66-00014-001', partName: 'Connector Board Assy', partType: 'N/A', fairId: 'FN002' },
+      { partNumber: '70-00035', partName: 'Connector Module Lower', partType: 'N/A', fairId: 'FAIR-1247' },
+      { partNumber: '40-00008-015', partName: 'Airbus liTeMood Placard', partType: 'N/A', fairId: 'FAI-074' },
+    ],
+    materials: [
+      { name: 'Connector Module Upper', spec: '70-00036', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Connector Board Assy', spec: '66-00014-001', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Connector Module Lower', spec: '70-00035', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+    ],
+    dims: [
+      { key: 'dimLength', label: 'Length', nominal: '470.6 ±0.25mm', unit: 'mm' },
+      { key: 'dimWidth', label: 'Width', nominal: '34.4 ±0.25mm', unit: 'mm' },
+      { key: 'dimHeight', label: 'Height', nominal: '35 ±0.5mm', unit: 'mm' },
+      { key: 'dimHeight2', label: 'Height w/ Connector', nominal: '61.5 ±0.25mm', unit: 'mm' },
+      { key: 'dimMass', label: 'Weight', nominal: '≤208g', unit: 'g' },
+    ],
+  },
+  '10-00012': {
+    name: 'Classic 36" LRU Assembly HB',
+    drawingNumber: '10-00012', drawingRev: 'C2',
+    isAssembly: true,
+    index: [
+      { partNumber: '15-00011-012', partName: '36" LRU Assembly HB', partType: 'N/A', fairId: 'FAI-071' },
+      { partNumber: '70-00043', partName: 'Classic Connector Bracket', partType: 'N/A', fairId: 'FAIR-1225' },
+      { partNumber: '70-00048', partName: 'Classic Connector Bracket Cover', partType: 'N/A', fairId: 'FAIR-1226' },
+      { partNumber: '40-00020', partName: 'Blanking Label', partType: 'N/A', fairId: 'FAIR-1216' },
+      { partNumber: '40-00008-010', partName: 'Airbus liTeMood Placard', partType: 'N/A', fairId: 'FAI-074' },
+    ],
+    materials: [
+      { name: 'Classic Harness', spec: '35-00010-001', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Classic Connector Bracket', spec: '70-00043', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Cable Tie', spec: '111-01950', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Classic Connector Bracket Cover', spec: '70-00048', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+      { name: 'Cable Clamp', spec: '0017 2023 200', supplier: 'STG Aerospace Ltd.', cocNumber: '' },
+    ],
+    dims: [],
+  },
+  OTHER: {
+    name: '',
+    drawingNumber: '', drawingRev: '',
+    isAssembly: true,
+    index: [],
+    dims: [],
+  },
+};
+
+function detectFamily(pn) {
+  pn = (pn || '').toUpperCase();
+  if (pn.startsWith('SG9904')) {
+    if (/-[TU]-\d/i.test(pn)) return 'SG9904_ANGLE';
+    return 'SG9904';
+  }
+  if (pn.startsWith('SG8924')) return 'SG8924';
+  if (pn.startsWith('SG8854')) return 'SG8854';
+  if (pn.startsWith('SG8892') || pn.startsWith('SG8829')) return 'SG8892';
+  if (pn.startsWith('SG8826')) return 'SG8826';
+  if (pn.startsWith('SG8844')) return 'SG8844';
+  if (pn.startsWith('15-00013')) return '15-00013';
+  if (pn.startsWith('10-00017')) return '10-00017';
+  if (pn.startsWith('10-00012')) return '10-00012';
+  return 'OTHER';
+}
+
+let currentFamily = 'OTHER';
+
+document.getElementById('partNumber').addEventListener('input', function() {
+  const pn = this.value.trim();
+  const fk = detectFamily(pn);
+  const fam = FAMILIES[fk];
+  currentFamily = fk;
+
+  const badge = document.getElementById('familyBadge');
+  badge.textContent = fk !== 'OTHER' ? `Detected: ${fam.name}` : '';
+
+  // Auto-fill name, drawing, rev
+  if (fam.name) document.getElementById('partName').value = fam.name;
+  if (fam.drawingNumber) document.getElementById('drawingNumber').value = fam.drawingNumber;
+  if (fam.drawingRev) document.getElementById('drawingRev').value = fam.drawingRev;
+
+  // Show/hide stop end field (SG9904 standard only)
+  const stopEndRow = document.getElementById('stopEndRow');
+  if (fk === 'SG9904') {
+    stopEndRow.classList.remove('hidden');
+    document.getElementById('stopEndPn').placeholder = 'e.g. SG9901';
+  } else {
+    stopEndRow.classList.add('hidden');
+  }
+
+  // Update dims
+  document.getElementById('dimsPartBadge').textContent = pn || '';
+  renderDims(fam);
+
+  // Update index
+  renderIndex(fam.index || []);
+
+  // Update materials
+  renderMaterials(fam.materials || []);
+});
+
+document.getElementById('woNumber').addEventListener('input', function() {
+  const wo = this.value.trim();
+  const mfgRef = document.getElementById('mfgProcessRef');
+  if (!mfgRef.value || mfgRef.value.startsWith('Spec 4006')) {
+    mfgRef.placeholder = `Spec 4006 / WO# ${wo}`;
+  }
+});
+
+// When stop end PN is typed, auto-update the matching index row
+document.getElementById('stopEndPn').addEventListener('input', function() {
+  const val = this.value.trim();
+  document.querySelectorAll('[id^="indexRow_"] [name^="index_name_"]').forEach(nameInput => {
+    if (nameInput.value.toLowerCase().includes('stop end')) {
+      const id = nameInput.name.replace('index_name_', '');
+      const pnInput = document.querySelector(`[name="index_pn_${id}"]`);
+      if (pnInput) pnInput.value = val;
+    }
+  });
+});
+
+function renderDims(fam) {
+  const body = document.getElementById('dimsBody');
+  const dims = fam.dims || [];
+  if (dims.length === 0) {
+    body.innerHTML = '<p style="color:#888; font-size:13px">Select a part number above to see the required measurements.</p>';
+    return;
+  }
+  body.innerHTML = dims.map(d => `
+    <div class="dim-row">
+      <div>
+        <div class="dim-label">${d.label}</div>
+        <div class="dim-nominal">Nominal: ${d.nominal}</div>
+      </div>
+      <div>
+        <label>Actual (${d.unit})</label>
+        <input type="text" name="${d.key}" id="${d.key}" placeholder="Enter measured value">
+      </div>
+      <div>
+        <label>Pass / Fail</label>
+        <select name="${d.key}_pf">
+          <option value="PASS">PASS</option>
+          <option value="FAIL">FAIL</option>
+        </select>
+      </div>
+    </div>
+  `).join('');
+}
+
+let indexRowCount = 0;
+function renderIndex(items) {
+  const container = document.getElementById('indexRows');
+  container.innerHTML = '';
+  indexRowCount = 0;
+  (items || []).forEach(item => addIndexRow(item));
+  if (!items || items.length === 0) addIndexRow();
+}
+
+function addIndexRow(item = {}) {
+  const container = document.getElementById('indexRows');
+  const id = indexRowCount++;
+  const div = document.createElement('div');
+  div.className = 'index-row';
+  div.id = `indexRow_${id}`;
+  div.innerHTML = `
+    <div><label>Part Number</label><input type="text" name="index_pn_${id}" value="${item.partNumber || ''}"></div>
+    <div><label>Part Name</label><input type="text" name="index_name_${id}" value="${item.partName || ''}"></div>
+    <div><label>Part Type</label><input type="text" name="index_type_${id}" value="${item.partType || 'N/A'}"></div>
+    <div><label>FAIR Identifier</label><input type="text" name="index_fair_${id}" value="${item.fairId || ''}"></div>
+    <div><button type="button" class="btn btn-danger" onclick="removeIndexRow(${id})">✕</button></div>
+  `;
+  container.appendChild(div);
+}
+
+function removeIndexRow(id) {
+  const el = document.getElementById(`indexRow_${id}`);
+  if (el) el.remove();
+}
+
+function togglePartial() {
+  const isFull = document.getElementById('fullFai').checked;
+  document.getElementById('partialSection').classList.toggle('hidden', isFull);
+  document.getElementById('fullReasonRow').classList.toggle('hidden', !isFull);
+}
+
+// Set today's date
+document.getElementById('verifiedDate').value = new Date().toISOString().split('T')[0];
+
+// Load next FAIR number on startup
+fetch('/next-fair-id').then(r => r.json()).then(d => {
+  document.getElementById('fairId').value = d.nextId;
+}).catch(() => {});
+
+// ─── Materials (Form 2) ───────────────────────────────────────────────────────
+let matRowCount = 0;
+
+function renderMaterials(items) {
+  const container = document.getElementById('materialRows');
+  container.innerHTML = '';
+  matRowCount = 0;
+  (items || []).forEach(m => addMaterialRow(m));
+  if (!items || items.length === 0) addMaterialRow();
+}
+
+function addMaterialRow(m = {}) {
+  const container = document.getElementById('materialRows');
+  const id = matRowCount++;
+  const div = document.createElement('div');
+  div.className = 'mat-row';
+  div.id = `matRow_${id}`;
+  div.innerHTML = `
+    <div><input type="text" name="mat_name_${id}" value="${m.name || ''}" placeholder="Material / Process"></div>
+    <div><input type="text" name="mat_spec_${id}" value="${m.spec || ''}" placeholder="Spec / Part #"></div>
+    <div><input type="text" name="mat_supplier_${id}" value="${m.supplier || 'STG Aerospace Ltd.'}" placeholder="Supplier"></div>
+    <div><input type="text" name="mat_coc_${id}" id="matCoc_${id}" value="${m.cocNumber || ''}" placeholder="Batch / CoC #"></div>
+    <div><button type="button" class="btn btn-danger" onclick="removeMaterialRow(${id})" style="padding:4px 8px">✕</button></div>
+  `;
+  container.appendChild(div);
+}
+
+function removeMaterialRow(id) {
+  const el = document.getElementById(`matRow_${id}`);
+  if (el) el.remove();
+}
+
+async function lookupWoBatches() {
+  const wo = (document.getElementById('woNumber').value || '').trim();
+  const banner = document.getElementById('batchBanner');
+  const btn = document.getElementById('findWoBtn');
+
+  if (!wo) {
+    banner.className = 'batch-banner warn';
+    banner.textContent = 'Please enter a WO# in Step 2 first.';
+    return;
+  }
+
+  // Collect current spec values from rendered rows
+  const specs = [];
+  document.querySelectorAll('[id^="matRow_"]').forEach(row => {
+    const id = row.id.replace('matRow_', '');
+    const spec = (document.querySelector(`[name="mat_spec_${id}"]`)?.value || '').trim();
+    if (spec) specs.push(spec);
+  });
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  banner.className = 'batch-banner';
+  banner.textContent = '';
+
+  try {
+    const url = `/api/lookup-wo?wo=${encodeURIComponent(wo)}&specs=${encodeURIComponent(specs.join(','))}`;
+    const resp = await fetch(url);
+    const result = await resp.json();
+
+    if (!result.found) {
+      banner.className = 'batch-banner warn';
+      banner.textContent = `⚠ ${result.message || 'WO picking list not found.'}`;
+      return;
+    }
+
+    const batches = result.batches || {};
+    let filled = 0;
+    document.querySelectorAll('[id^="matRow_"]').forEach(row => {
+      const id = row.id.replace('matRow_', '');
+      const specInput = document.querySelector(`[name="mat_spec_${id}"]`);
+      const cocInput = document.getElementById(`matCoc_${id}`);
+      if (!specInput || !cocInput) return;
+      const spec = specInput.value.trim();
+      if (batches[spec]) {
+        cocInput.value = batches[spec];
+        cocInput.style.background = '#e8f5e9';
+        filled++;
+      }
+    });
+
+    const total = Object.keys(batches).length;
+    if (filled > 0) {
+      banner.className = 'batch-banner success';
+      banner.textContent = `✅ Found WO ${result.woNumber} (${result.pdfFile}) — filled ${filled} of ${specs.length} batch numbers. Verify each before generating.`;
+    } else {
+      banner.className = 'batch-banner warn';
+      banner.textContent = `⚠ Found WO ${result.woNumber} picking list but could not extract batch numbers (OCR may be incomplete). Please enter manually.`;
+    }
+
+  } catch (err) {
+    banner.className = 'batch-banner error';
+    banner.textContent = '❌ Lookup error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Find Batch Numbers from WO';
+  }
+}
+
+// Initial render
+renderDims(FAMILIES.OTHER);
+renderIndex([]);
+renderMaterials([]);
+
+// Form submit
+document.getElementById('faiForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const status = document.getElementById('status');
+  status.className = 'status';
+  status.textContent = '';
+
+  const formData = new FormData(this);
+  const data = Object.fromEntries(formData.entries());
+
+  // Build index array from dynamic rows
+  data.index = [];
+  document.querySelectorAll('[id^="indexRow_"]').forEach(row => {
+    const id = row.id.replace('indexRow_', '');
+    const pn = (formData.get(`index_pn_${id}`) || '').trim();
+    if (pn || formData.get(`index_name_${id}`)) {
+      data.index.push({
+        partNumber: pn,
+        partName: formData.get(`index_name_${id}`) || '',
+        partType: formData.get(`index_type_${id}`) || 'N/A',
+        fairId: formData.get(`index_fair_${id}`) || '',
+      });
+    }
+  });
+
+  // Build materials array from Form 2 rows
+  data.materials = [];
+  document.querySelectorAll('[id^="matRow_"]').forEach(row => {
+    const id = row.id.replace('matRow_', '');
+    const name = (formData.get(`mat_name_${id}`) || '').trim();
+    if (name) {
+      data.materials.push({
+        name,
+        spec:      formData.get(`mat_spec_${id}`) || '',
+        code:      'N/A',
+        supplier:  formData.get(`mat_supplier_${id}`) || 'STG Aerospace Ltd.',
+        custApproval: 'N/A',
+        cocNumber: formData.get(`mat_coc_${id}`) || '',
+      });
+    }
+  });
+
+  // Resolve fairReason from whichever field is visible
+  if (data.fairType === 'Full') {
+    data.fairReason = document.getElementById('fullFaiReason').value;
+  } else {
+    data.fairReason = document.getElementById('fairReason').value;
+  }
+
+  data.familyKey = currentFamily;
+  data.isAssembly = document.querySelector('[name=isAssembly]:checked').value === 'true';
+
+  try {
+    const resp = await fetch('/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.error || 'Generation failed');
+    }
+
+    const result = await resp.json();
+    status.className = 'status success';
+    status.innerHTML = `✅ FAI document generated!<br>
+      <strong>File:</strong> ${result.fileName}<br>
+      <strong>Folder:</strong> ${result.folderPath}<br>
+      <small>FAI Log updated. Open the file in Word to sign and export PDF.</small>`;
+
+    // Optionally trigger download too
+    if (result.downloadUrl) {
+      window.open(result.downloadUrl, '_blank');
+    }
+
+  } catch (err) {
+    status.className = 'status error';
+    status.textContent = '❌ Error: ' + err.message;
+  }
+});
+</script>
+</body>
+</html>

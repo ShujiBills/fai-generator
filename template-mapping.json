@@ -1,0 +1,55 @@
+{
+  "tables": {
+    "0": {
+      "0": {
+        "0": "partNumber",
+        "1": "partName",
+        "2": "serialNumber",
+        "3": "fairId"
+      },
+      "1": {
+        "0": "partRev",
+        "1": "drawingNumber",
+        "2": "drawingRev",
+        "3": "additionalChanges"
+      },
+      "2": {
+        "0": "mfgProcessRef",
+        "1": "orgName",
+        "2": "supplierCode",
+        "3": "poNumber"
+      },
+      "20": {
+        "0": "verifiedBy",
+        "1": "verifiedDate"
+      },
+      "21": {
+        "0": "approvedBy",
+        "1": "approvedDate"
+      },
+      "23": {
+        "0": "comments"
+      }
+    },
+    "1": {
+      "0": {
+        "0": "partNumber",
+        "1": "partName",
+        "2": "serialNumber",
+        "3": "fairId"
+      },
+      "21": {
+        "0": "funcTestProc",
+        "1": "funcTestResult"
+      }
+    },
+    "2": {
+      "0": {
+        "0": "partNumber",
+        "1": "partName",
+        "2": "serialNumber",
+        "3": "fairId"
+      }
+    }
+  }
+}

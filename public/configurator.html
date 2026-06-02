@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAI Template Configurator</title>
+<style>
+  :root {
+    --blue: #003087;
+    --light-blue: #e8f0fb;
+    --green: #1a6e2e;
+    --red: #c0392b;
+    --border: #ccc;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6fa; color: #222; font-size: 13px; }
+
+  header {
+    background: var(--blue);
+    color: white;
+    padding: 16px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 { font-size: 18px; font-weight: 700; }
+
+  .container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+
+  .controls {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .controls h2 { margin-bottom: 12px; font-size: 14px; }
+
+  .control-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    transition: all 0.2s;
+  }
+
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: #002070; }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #155a27; }
+
+  .btn-secondary { background: #666; color: white; }
+  .btn-secondary:hover { background: #555; }
+
+  .status-msg {
+    padding: 12px;
+    border-radius: 4px;
+    margin-top: 12px;
+    display: none;
+  }
+  .status-msg.success { background: #d4edda; color: var(--green); display: block; }
+  .status-msg.error { background: #f8d7da; color: var(--red); display: block; }
+  .status-msg.info { background: var(--light-blue); color: var(--blue); display: block; }
+
+  .main-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+  }
+
+  .template-viewer {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow-x: auto;
+  }
+
+  .template-viewer h2 { margin-bottom: 15px; font-size: 14px; }
+
+  .form-section {
+    margin-bottom: 30px;
+    page-break-inside: avoid;
+  }
+
+  .form-title {
+    background: var(--blue);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    font-size: 11px;
+  }
+
+  th, td {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+
+  th { background: var(--light-blue); font-weight: 700; color: var(--blue); }
+
+  td.cell-label { background: #fafafa; font-weight: 600; color: #333; }
+
+  td.cell-value {
+    background: white;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  td.cell-value:hover { background: #fffaf0; }
+
+  td.cell-value.selected {
+    background: #fff3cd;
+    box-shadow: inset 0 0 0 2px #ffc107;
+  }
+
+  td.cell-value.mapped {
+    background: #d4edda;
+    color: var(--green);
+  }
+
+  .cell-content {
+    min-height: 20px;
+    word-wrap: break-word;
+  }
+
+  .cell-mapping {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--green);
+    color: white;
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 9px;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+  }
+
+  .sidebar h3 { margin-bottom: 12px; font-size: 13px; font-weight: 700; color: var(--blue); }
+
+  .field-selector {
+    margin-bottom: 15px;
+  }
+
+  .field-selector label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #555; }
+
+  select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+  }
+
+  .cell-info {
+    background: var(--light-blue);
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    font-size: 11px;
+  }
+
+  .cell-info .label { color: var(--blue); font-weight: 600; }
+  .cell-info .value { margin-top: 4px; word-break: break-word; }
+
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-buttons button { width: 100%; }
+
+  .assignment-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 10px;
+  }
+
+  .assignment-item {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .assignment-item:last-child { border-bottom: none; }
+
+  .assignment-item .field {
+    flex: 1;
+    font-weight: 600;
+    color: var(--green);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .assignment-item .remove {
+    color: var(--red);
+    cursor: pointer;
+    font-weight: 700;
+    margin-left: 8px;
+  }
+
+  .loading { color: #999; font-style: italic; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📋 FAI Template Configurator</h1>
+    <span>Map form fields to data values</span>
+  </div>
+</header>
+
+<div class="container">
+  <div class="controls">
+    <h2>Configuration</h2>
+    <div class="control-buttons">
+      <button class="btn-primary" onclick="loadTemplate()">Load Template</button>
+      <button class="btn-secondary" onclick="clearAllMappings()">Clear All</button>
+      <button class="btn-success" onclick="saveMapping()">💾 Save Mapping</button>
+    </div>
+    <div id="status" class="status-msg"></div>
+  </div>
+
+  <div class="main-layout">
+    <div class="template-viewer" id="templateViewer">
+      <h2>Template Structure</h2>
+      <p class="loading">Loading template...</p>
+    </div>
+
+    <div class="sidebar">
+      <h3>Field Assignment</h3>
+
+      <div id="cellInfo" class="cell-info" style="display:none;">
+        <div class="label">Selected Cell:</div>
+        <div id="cellLocation" class="value"></div>
+        <div id="cellTextPreview" class="value"></div>
+      </div>
+
+      <div class="field-selector">
+        <label>Assign Data Field:</label>
+        <select id="fieldSelect" onchange="assignField()">
+          <option value="">-- Select a field --</option>
+        </select>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn-success" onclick="assignField()">✓ Assign</button>
+        <button class="btn-secondary" onclick="removeCurrentAssignment()">✕ Remove</button>
+      </div>
+
+      <hr style="margin: 15px 0; border: none; border-top: 1px solid var(--border);">
+
+      <h3>Assignments</h3>
+      <div id="assignmentList" class="assignment-list">
+        <p class="loading">No assignments yet</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let templateStructure = null;
+let currentSelection = null;
+let fieldMappings = {}; // { tableIdx: { rowIdx: { cellIdx: 'fieldName' } } }
+
+const statusEl = document.getElementById('status');
+const fieldSelectEl = document.getElementById('fieldSelect');
+const cellInfoEl = document.getElementById('cellInfo');
+
+// Show status message
+function showStatus(message, type = 'info') {
+  statusEl.textContent = message;
+  statusEl.className = `status-msg ${type}`;
+  setTimeout(() => { statusEl.className = 'status-msg'; }, 4000);
+}
+
+// Load and parse template
+async function loadTemplate() {
+  try {
+    showStatus('Loading template...', 'info');
+
+    // First load the mapping to show existing assignments
+    const mappingRes = await fetch('/api/template-mapping');
+    const mapping = await mappingRes.json();
+    fieldMappings = mapping.tables || {};
+
+    // Then load the template structure
+    const res = await fetch('/api/parse-template');
+    const data = await res.json();
+
+    if (!data.success) {
+      showStatus('Error loading template: ' + (data.error || 'Unknown error'), 'error');
+      return;
+    }
+
+    templateStructure = data;
+    renderTemplate();
+    loadFields();
+    updateAssignmentList();
+    showStatus(`Template loaded: ${data.tableCount} tables found`, 'success');
+
+  } catch (err) {
+    showStatus('Error: ' + err.message, 'error');
+  }
+}
+
+// Load available fields
+async function loadFields() {
+  try {
+    const res = await fetch('/api/available-fields');
+    const data = await res.json();
+    const fields = data.fields || [];
+
+    fieldSelectEl.innerHTML = '<option value="">-- Select a field --</option>';
+    fields.forEach(field => {
+      const option = document.createElement('option');
+      option.value = field;
+      option.textContent = field;
+      fieldSelectEl.appendChild(option);
+    });
+  } catch (err) {
+    showStatus('Error loading fields: ' + err.message, 'error');
+  }
+}
+
+// Render template structure as clickable cells
+function renderTemplate() {
+  const viewer = document.getElementById('templateViewer');
+  let html = '<h2>Template Structure</h2>';
+
+  templateStructure.tables.forEach((table, tableIdx) => {
+    html += `<div class="form-section">
+      <div class="form-title">Table ${tableIdx + 1}</div>
+      <table>`;
+
+    table.rows.forEach((row, rowIdx) => {
+      html += '<tr>';
+      row.cells.forEach((cell, cellIdx) => {
+        const isMapped = fieldMappings[tableIdx]?.[rowIdx]?.[cellIdx];
+        const mapClass = isMapped ? 'mapped' : '';
+        const mapping = isMapped ? `<div class="cell-mapping">${isMapped}</div>` : '';
+        html += `
+          <td class="cell-value ${mapClass}" onclick="selectCell(${tableIdx}, ${rowIdx}, ${cellIdx}, this)">
+            <div class="cell-content">${cell.text || '(empty)'}</div>
+            ${mapping}
+          </td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</table></div>';
+  });
+
+  viewer.innerHTML = html;
+}
+
+// Select a cell
+function selectCell(tableIdx, rowIdx, cellIdx, element) {
+  // Remove previous selection
+  document.querySelectorAll('td.cell-value.selected').forEach(el => {
+    el.classList.remove('selected');
+  });
+
+  // Add selection to clicked cell
+  element.classList.add('selected');
+
+  currentSelection = { tableIdx, rowIdx, cellIdx };
+
+  // Show cell info
+  const table = templateStructure.tables[tableIdx];
+  const cell = table.rows[rowIdx].cells[cellIdx];
+  const isMapped = fieldMappings[tableIdx]?.[rowIdx]?.[cellIdx];
+
+  document.getElementById('cellLocation').textContent = `Table ${tableIdx + 1}, Row ${rowIdx + 1}, Cell ${cellIdx + 1}`;
+  document.getElementById('cellTextPreview').textContent = `Content: "${cell.text || '(empty)'}"`;
+
+  if (isMapped) {
+    fieldSelectEl.value = isMapped;
+  } else {
+    fieldSelectEl.value = '';
+  }
+
+  cellInfoEl.style.display = 'block';
+}
+
+// Assign field to selected cell
+function assignField() {
+  if (!currentSelection) {
+    showStatus('Please select a cell first', 'error');
+    return;
+  }
+
+  const field = fieldSelectEl.value;
+  if (!field) {
+    showStatus('Please select a field', 'error');
+    return;
+  }
+
+  const { tableIdx, rowIdx, cellIdx } = currentSelection;
+
+  // Create mapping structure if needed
+  if (!fieldMappings[tableIdx]) fieldMappings[tableIdx] = {};
+  if (!fieldMappings[tableIdx][rowIdx]) fieldMappings[tableIdx][rowIdx] = {};
+
+  fieldMappings[tableIdx][rowIdx][cellIdx] = field;
+
+  renderTemplate();
+  selectCell(tableIdx, rowIdx, cellIdx, document.querySelectorAll('td.cell-value')[cellIdx]);
+  updateAssignmentList();
+  showStatus(`✓ Assigned "${field}" to cell (${tableIdx + 1}, ${rowIdx + 1}, ${cellIdx + 1})`, 'success');
+}
+
+// Remove assignment from current cell
+function removeCurrentAssignment() {
+  if (!currentSelection) {
+    showStatus('Please select a cell first', 'error');
+    return;
+  }
+
+  const { tableIdx, rowIdx, cellIdx } = currentSelection;
+
+  if (fieldMappings[tableIdx]?.[rowIdx]?.[cellIdx]) {
+    delete fieldMappings[tableIdx][rowIdx][cellIdx];
+    renderTemplate();
+    cellInfoEl.style.display = 'none';
+    fieldSelectEl.value = '';
+    updateAssignmentList();
+    showStatus('Assignment removed', 'success');
+  }
+}
+
+// Clear all mappings
+function clearAllMappings() {
+  if (!confirm('Clear all mappings? This cannot be undone.')) return;
+  fieldMappings = {};
+  renderTemplate();
+  cellInfoEl.style.display = 'none';
+  fieldSelectEl.value = '';
+  updateAssignmentList();
+  showStatus('All mappings cleared', 'success');
+}
+
+// Update assignment list sidebar
+function updateAssignmentList() {
+  const list = document.getElementById('assignmentList');
+  const assignments = [];
+
+  Object.entries(fieldMappings).forEach(([tableIdx, rows]) => {
+    Object.entries(rows).forEach(([rowIdx, cells]) => {
+      Object.entries(cells).forEach(([cellIdx, field]) => {
+        assignments.push({ tableIdx: parseInt(tableIdx), rowIdx: parseInt(rowIdx), cellIdx: parseInt(cellIdx), field });
+      });
+    });
+  });
+
+  if (assignments.length === 0) {
+    list.innerHTML = '<p class="loading">No assignments yet</p>';
+    return;
+  }
+
+  list.innerHTML = assignments.map(a =>
+    `<div class="assignment-item">
+      <div class="field">${a.field}</div>
+      <div class="remove" onclick="removeAssignment(${a.tableIdx}, ${a.rowIdx}, ${a.cellIdx})">×</div>
+    </div>`
+  ).join('');
+}
+
+// Remove a specific assignment
+function removeAssignment(tableIdx, rowIdx, cellIdx) {
+  if (fieldMappings[tableIdx]?.[rowIdx]?.[cellIdx]) {
+    delete fieldMappings[tableIdx][rowIdx][cellIdx];
+    renderTemplate();
+    updateAssignmentList();
+    showStatus('Assignment removed', 'success');
+  }
+}
+
+// Save mapping to server
+async function saveMapping() {
+  try {
+    if (Object.keys(fieldMappings).length === 0) {
+      showStatus('No mappings to save', 'error');
+      return;
+    }
+
+    const res = await fetch('/api/save-template-mapping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tables: fieldMappings }),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      showStatus(`✓ Template mapping saved! ${Object.keys(fieldMappings).length} fields mapped`, 'success');
+    } else {
+      showStatus('Error saving mapping: ' + (data.error || 'Unknown error'), 'error');
+    }
+  } catch (err) {
+    showStatus('Error: ' + err.message, 'error');
+  }
+}
+
+// Load on page load
+window.addEventListener('load', loadTemplate);
+</script>
+
+</body>
+</html>
