@@ -267,7 +267,10 @@
   <div class="card" id="materialsCard">
     <div class="card-header">
       <span class="step">6</span> Form 2: Materials &amp; Batch/CoC Numbers
-      <button type="button" id="findWoBtn" class="btn-find-wo" style="margin-left:auto" onclick="lookupWoBatches()">Find Batch Numbers from WO</button>
+      <div style="display:flex; gap:8px; margin-left:auto">
+        <button type="button" id="findWoBtn" class="btn-find-wo" onclick="lookupWoBatches()">Find Batch Numbers from WO</button>
+        <button type="button" id="findClsBtn" class="btn-find-wo" onclick="lookupClsData()">Load CLS Work Instructions</button>
+      </div>
     </div>
     <div class="card-body">
       <div id="batchBanner" class="batch-banner"></div>
@@ -814,6 +817,53 @@ async function lookupWoBatches() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Find Batch Numbers from WO';
+  }
+}
+
+async function lookupClsData() {
+  const partNum = (document.getElementById('partNumber').value || '').trim();
+  const banner = document.getElementById('batchBanner');
+  const btn = document.getElementById('findClsBtn');
+
+  if (!partNum) {
+    banner.className = 'batch-banner warn';
+    banner.textContent = 'Please enter a Part Number in Step 1 first.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Searching CLS…';
+  banner.className = 'batch-banner';
+  banner.textContent = '';
+
+  try {
+    const url = `/api/lookup-cls?partNumber=${encodeURIComponent(partNum)}`;
+    const resp = await fetch(url);
+    const result = await resp.json();
+
+    if (!result.found) {
+      banner.className = 'batch-banner warn';
+      banner.textContent = `⚠ CLS work instruction not found for ${partNum}. Check the folder manually: Q:\\QMS PROCEDURES AND FORMS\\LIVE\\WORK INSTRUCTIONS\\PRODUCTION\\CLS`;
+      return;
+    }
+
+    // Display CLS data as informational banner
+    let clsInfo = `✅ Found CLS WI ${result.wiNumber || 'N/A'} (${result.folder}) - ${result.pdfFile}`;
+    if (result.revision) clsInfo += ` ${result.revision}`;
+    banner.className = 'batch-banner success';
+    banner.textContent = clsInfo;
+
+    // Optionally: show components/procedures as additional info
+    if (result.components && result.components.length > 0) {
+      banner.textContent += ` | Components: ${result.components.join(', ')}`;
+    }
+
+  } catch (err) {
+    banner.className = 'batch-banner error';
+    banner.textContent = '❌ CLS lookup error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Load CLS Work Instructions';
   }
 }
 

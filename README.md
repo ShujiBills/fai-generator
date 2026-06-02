@@ -17,6 +17,7 @@ A professional web-based tool for generating FAI documents with automatic form f
 - **Q: Drive Integration** — Auto-saves to `Q:\USA TXS\20X. FAI's and Log\WIP FAI\`
 - **FAI Log Updates** — Automatically records FAI entries in log file
 - **WO Batch Lookup** — Retrieves batch numbers from work order picking lists
+- **CLS Work Instructions** — Links to Cabin Light System (CLS) work instructions from Q: drive
 
 ### 🛠️ Developer Features
 - **REST API** — Generate documents programmatically
@@ -162,7 +163,8 @@ fai-generator/
 │   ├── templateParser.js    # DOCX structure extraction
 │   ├── families.js          # Part family definitions
 │   ├── fairLog.js           # FAI log management
-│   └── batchLookup.js       # WO batch lookup
+│   ├── batchLookup.js       # WO batch lookup
+│   └── clsLookup.js         # CLS work instructions lookup
 ├── FM1010_template.docx     # Official AS9102 template
 ├── template-mapping.json    # Field-to-cell mappings
 └── TEMPLATE_PLACEHOLDERS.md # Field mapping guide
@@ -178,6 +180,7 @@ fai-generator/
 |----------|---------|
 | `GET /next-fair-id` | Get suggested next FAIR number |
 | `GET /api/lookup-wo` | Look up batch numbers from WO |
+| `GET /api/lookup-cls` | Look up CLS work instructions by part number |
 | `GET /api/available-fields` | List all mappable data fields |
 | `GET /api/parse-template` | Extract template structure |
 | `GET /api/template-mapping` | Get current field mappings |
@@ -250,6 +253,22 @@ Ready for user review/signature
 - **Frontend:** Vanilla HTML/CSS/JavaScript
 - **File Format:** DOCX (Office Open XML)
 - **Storage:** Q: drive (Windows file share)
+
+---
+
+## 🔌 External Data Integration
+
+### Work Order (WO) Batch Lookup
+Automatically extract batch/CoC numbers from WO picking lists by matching material specifications.
+
+### CLS Work Instructions
+Load Cabin Light System (CLS) assembly work instructions from `Q:\QMS PROCEDURES AND FORMS\LIVE\WORK INSTRUCTIONS\PRODUCTION\CLS` by part number. Returns:
+- WI number and revision
+- Product line (D20, D30, D189, D156, D187, etc.)
+- Component references
+- Assembly/test procedures
+
+**Usage:** Click "Load CLS Work Instructions" button in Step 6, select part number from form.
 
 ---
 

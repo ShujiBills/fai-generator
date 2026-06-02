@@ -4,6 +4,7 @@ const fs = require('fs');
 const { generateFaiDocx } = require('./lib/generate');
 const { getNextFairNumber, saveFairDoc, appendToLog } = require('./lib/fairLog');
 const { lookupWoBatches } = require('./lib/batchLookup');
+const { lookupClsData } = require('./lib/clsLookup');
 const { parseTemplate, availableFields } = require('./lib/templateParser');
 
 const app = express();
@@ -32,6 +33,19 @@ app.get('/api/lookup-wo', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('lookup-wo error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Look up CLS (Cabin Light System) work instructions
+app.get('/api/lookup-cls', async (req, res) => {
+  try {
+    const { partNumber } = req.query;
+    if (!partNumber) return res.status(400).json({ error: 'partNumber parameter required' });
+    const result = await lookupClsData(partNumber);
+    res.json(result);
+  } catch (err) {
+    console.error('lookup-cls error:', err);
     res.status(500).json({ error: err.message });
   }
 });
