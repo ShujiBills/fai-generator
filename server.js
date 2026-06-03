@@ -7,6 +7,7 @@ const { lookupWoBatches } = require('./lib/batchLookup');
 const { lookupClsData } = require('./lib/clsLookup');
 const { lookupWarehouseData } = require('./lib/warehouseLookup');
 const { lookupConcessionsData } = require('./lib/concessionsLookup');
+const { lookupDesignData } = require('./lib/designDataLookup');
 const { parseTemplate, availableFields } = require('./lib/templateParser');
 
 const app = express();
@@ -76,6 +77,21 @@ app.get('/api/lookup-concessions', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('lookup-concessions error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Look up Design Data (customer approvals, LM product data, change control, DQNs, SCNs)
+app.get('/api/lookup-design-data', async (req, res) => {
+  try {
+    const { partNumber, drawingNumber } = req.query;
+    if (!partNumber && !drawingNumber) {
+      return res.status(400).json({ error: 'partNumber or drawingNumber parameter required' });
+    }
+    const result = await lookupDesignData(partNumber, drawingNumber);
+    res.json(result);
+  } catch (err) {
+    console.error('lookup-design-data error:', err);
     res.status(500).json({ error: err.message });
   }
 });
