@@ -6,6 +6,7 @@ const { getNextFairNumber, saveFairDoc, appendToLog } = require('./lib/fairLog')
 const { lookupWoBatches } = require('./lib/batchLookup');
 const { lookupClsData } = require('./lib/clsLookup');
 const { lookupWarehouseData } = require('./lib/warehouseLookup');
+const { lookupConcessionsData } = require('./lib/concessionsLookup');
 const { parseTemplate, availableFields } = require('./lib/templateParser');
 
 const app = express();
@@ -60,6 +61,21 @@ app.get('/api/lookup-warehouse', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('lookup-warehouse error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Look up Concession records by part number or CON number
+app.get('/api/lookup-concessions', async (req, res) => {
+  try {
+    const { partNumber, conNumber } = req.query;
+    if (!partNumber && !conNumber) {
+      return res.status(400).json({ error: 'partNumber or conNumber parameter required' });
+    }
+    const result = await lookupConcessionsData(partNumber, conNumber);
+    res.json(result);
+  } catch (err) {
+    console.error('lookup-concessions error:', err);
     res.status(500).json({ error: err.message });
   }
 });
