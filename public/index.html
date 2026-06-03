@@ -156,6 +156,10 @@
           <input type="text" id="serialNumber" name="serialNumber" value="N/A">
         </div>
       </div>
+      <div style="margin-top: 14px">
+        <button type="button" class="btn-find-wo" onclick="lookupUkFairs()">🔍 Find Previous FAIs</button>
+        <div id="ukFairsBanner" class="batch-banner"></div>
+      </div>
     </div>
   </div>
 
@@ -195,6 +199,10 @@
           <input type="text" id="mfgProcessRef" name="mfgProcessRef" placeholder="Auto-filled: Spec 4006 / WO# ...">
           <div class="hint">Leave blank to auto-build from Spec 4006 + WO#</div>
         </div>
+      </div>
+      <div style="margin-top: 14px">
+        <button type="button" class="btn-find-wo" onclick="lookupDesignData()">📋 Design Data & Approvals</button>
+        <div id="designDataBanner" class="batch-banner"></div>
       </div>
     </div>
   </div>
@@ -267,9 +275,11 @@
   <div class="card" id="materialsCard">
     <div class="card-header">
       <span class="step">6</span> Form 2: Materials &amp; Batch/CoC Numbers
-      <div style="display:flex; gap:8px; margin-left:auto">
-        <button type="button" id="findWoBtn" class="btn-find-wo" onclick="lookupWoBatches()">Find Batch Numbers from WO</button>
-        <button type="button" id="findClsBtn" class="btn-find-wo" onclick="lookupClsData()">Load CLS Work Instructions</button>
+      <div style="display:flex; gap:6px; margin-left:auto; flex-wrap:wrap; justify-content:flex-end">
+        <button type="button" id="findWoBtn" class="btn-find-wo" onclick="lookupWoBatches()" title="Get batch numbers from work order picking lists">WO Batch Numbers</button>
+        <button type="button" id="findClsBtn" class="btn-find-wo" onclick="lookupClsData()" title="Load CLS work instructions">CLS Instructions</button>
+        <button type="button" id="findWarehouseBtn" class="btn-find-wo" onclick="lookupWarehouse()" title="Check warehouse stock & C of C">📦 Warehouse</button>
+        <button type="button" id="findConcessionsBtn" class="btn-find-wo" onclick="lookupConcessions()" title="Check for concessions/NCRs">⚠️ Concessions</button>
       </div>
     </div>
     <div class="card-body">
@@ -864,6 +874,171 @@ async function lookupClsData() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Load CLS Work Instructions';
+  }
+}
+
+async function lookupWarehouse() {
+  const partNum = (document.getElementById('partNumber').value || '').trim();
+  const banner = document.getElementById('batchBanner');
+  const btn = document.getElementById('findWarehouseBtn');
+
+  if (!partNum) {
+    banner.className = 'batch-banner warn';
+    banner.textContent = 'Please enter a Part Number in Step 1 first.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  banner.className = 'batch-banner';
+  banner.textContent = '';
+
+  try {
+    const url = `/api/lookup-warehouse?partNumber=${encodeURIComponent(partNum)}`;
+    const resp = await fetch(url);
+    const result = await resp.json();
+
+    if (!result.found) {
+      banner.className = 'batch-banner warn';
+      banner.textContent = `⚠ No warehouse records found for ${partNum}.`;
+      return;
+    }
+
+    const counts = [];
+    if (result.stockRequisitions) counts.push(`${result.stockRequisitions.count} stock req.`);
+    if (result.cofcAndDeliveryNotes) counts.push(`${result.cofcAndDeliveryNotes.count} C of C/delivery`);
+    if (result.inspectionRecords) counts.push(`${result.inspectionRecords.count} insp. rec.`);
+
+    banner.className = 'batch-banner success';
+    banner.textContent = `✅ Warehouse: ${counts.join(' | ')} | ${result.summary}`;
+  } catch (err) {
+    banner.className = 'batch-banner error';
+    banner.textContent = '❌ Warehouse lookup error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📦 Warehouse';
+  }
+}
+
+async function lookupConcessions() {
+  const partNum = (document.getElementById('partNumber').value || '').trim();
+  const banner = document.getElementById('batchBanner');
+  const btn = document.getElementById('findConcessionsBtn');
+
+  if (!partNum) {
+    banner.className = 'batch-banner warn';
+    banner.textContent = 'Please enter a Part Number in Step 1 first.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  banner.className = 'batch-banner';
+  banner.textContent = '';
+
+  try {
+    const url = `/api/lookup-concessions?partNumber=${encodeURIComponent(partNum)}`;
+    const resp = await fetch(url);
+    const result = await resp.json();
+
+    if (!result.found) {
+      banner.className = 'batch-banner success';
+      banner.textContent = `✅ No concessions found for ${partNum} (clean part).`;
+      return;
+    }
+
+    banner.className = 'batch-banner warn';
+    banner.textContent = `⚠️ CONCESSIONS FOUND: ${result.concessionsCount} record(s) for ${partNum}. Review before FAI approval.`;
+  } catch (err) {
+    banner.className = 'batch-banner error';
+    banner.textContent = '❌ Concessions lookup error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚠️ Concessions';
+  }
+}
+
+async function lookupUkFairs() {
+  const partNum = (document.getElementById('partNumber').value || '').trim();
+  const banner = document.getElementById('ukFairsBanner');
+  const btn = event.target;
+
+  if (!partNum) {
+    banner.className = 'batch-banner warn';
+    banner.textContent = 'Please enter a Part Number in Step 1 first.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  banner.className = 'batch-banner';
+  banner.textContent = '';
+
+  try {
+    const url = `/api/lookup-uk-fairs?partNumber=${encodeURIComponent(partNum)}`;
+    const resp = await fetch(url);
+    const result = await resp.json();
+
+    if (!result.found) {
+      banner.className = 'batch-banner success';
+      banner.textContent = `✅ No previous FAIs found for ${partNum} (first FAI for this part).`;
+      return;
+    }
+
+    const recordList = result.records.map(r => `FAIR-${r.fairNumber || '?'}`).join(', ');
+    banner.className = 'batch-banner success';
+    banner.textContent = `ℹ️ Previous FAIs: ${result.previousFairsCount} found (${recordList}) — Check for revision continuity.`;
+  } catch (err) {
+    banner.className = 'batch-banner error';
+    banner.textContent = '❌ UK FAIRs lookup error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔍 Find Previous FAIs';
+  }
+}
+
+async function lookupDesignData() {
+  const partNum = (document.getElementById('partNumber').value || '').trim();
+  const drawingNum = (document.getElementById('drawingNumber').value || '').trim();
+  const banner = document.getElementById('designDataBanner');
+  const btn = event.target;
+
+  if (!partNum && !drawingNum) {
+    banner.className = 'batch-banner warn';
+    banner.textContent = 'Please enter a Part Number or Drawing Number first.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  banner.className = 'batch-banner';
+  banner.textContent = '';
+
+  try {
+    const url = `/api/lookup-design-data?partNumber=${encodeURIComponent(partNum)}&drawingNumber=${encodeURIComponent(drawingNum)}`;
+    const resp = await fetch(url);
+    const result = await resp.json();
+
+    if (!result.found) {
+      banner.className = 'batch-banner warn';
+      banner.textContent = `⚠ No design data found.`;
+      return;
+    }
+
+    const counts = [];
+    if (result.customerApprovals) counts.push(`${result.customerApprovals.count} approvals`);
+    if (result.changeControl) counts.push(`${result.changeControl.count} changes`);
+    if (result.dqns) counts.push(`${result.dqns.count} DQNs`);
+    if (result.scns) counts.push(`${result.scns.count} SCNs`);
+
+    banner.className = 'batch-banner success';
+    banner.textContent = `✅ Design Data: ${counts.join(' | ')} | Review approvals & change history.`;
+  } catch (err) {
+    banner.className = 'batch-banner error';
+    banner.textContent = '❌ Design Data lookup error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📋 Design Data & Approvals';
   }
 }
 
