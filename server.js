@@ -8,6 +8,7 @@ const { lookupClsData } = require('./lib/clsLookup');
 const { lookupWarehouseData } = require('./lib/warehouseLookup');
 const { lookupConcessionsData } = require('./lib/concessionsLookup');
 const { lookupDesignData } = require('./lib/designDataLookup');
+const { lookupUkFairsData } = require('./lib/ukFairsLookup');
 const { parseTemplate, availableFields } = require('./lib/templateParser');
 
 const app = express();
@@ -92,6 +93,21 @@ app.get('/api/lookup-design-data', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('lookup-design-data error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Look up UK FAIRs by FAIR number or part number (historical reference)
+app.get('/api/lookup-uk-fairs', async (req, res) => {
+  try {
+    const { fairNumber, partNumber } = req.query;
+    if (!fairNumber && !partNumber) {
+      return res.status(400).json({ error: 'fairNumber or partNumber parameter required' });
+    }
+    const result = await lookupUkFairsData(fairNumber, partNumber);
+    res.json(result);
+  } catch (err) {
+    console.error('lookup-uk-fairs error:', err);
     res.status(500).json({ error: err.message });
   }
 });
