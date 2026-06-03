@@ -9,6 +9,7 @@ const { lookupWarehouseData } = require('./lib/warehouseLookup');
 const { lookupConcessionsData } = require('./lib/concessionsLookup');
 const { lookupDesignData } = require('./lib/designDataLookup');
 const { lookupUkFairsData } = require('./lib/ukFairsLookup');
+const { lookupTestResults } = require('./lib/testResultsLookup');
 const { parseTemplate, availableFields } = require('./lib/templateParser');
 
 const app = express();
@@ -108,6 +109,18 @@ app.get('/api/lookup-uk-fairs', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('lookup-uk-fairs error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Look up D30 Test Results (ATP, Calibration, Configuration)
+app.get('/api/lookup-test-results', async (req, res) => {
+  try {
+    const { partNumber } = req.query;
+    const result = await lookupTestResults(partNumber);
+    res.json(result);
+  } catch (err) {
+    console.error('lookup-test-results error:', err);
     res.status(500).json({ error: err.message });
   }
 });

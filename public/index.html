@@ -280,6 +280,7 @@
         <button type="button" id="findClsBtn" class="btn-find-wo" onclick="lookupClsData()" title="Load CLS work instructions">CLS Instructions</button>
         <button type="button" id="findWarehouseBtn" class="btn-find-wo" onclick="lookupWarehouse()" title="Check warehouse stock & C of C">📦 Warehouse</button>
         <button type="button" id="findConcessionsBtn" class="btn-find-wo" onclick="lookupConcessions()" title="Check for concessions/NCRs">⚠️ Concessions</button>
+        <button type="button" id="findTestResultsBtn" class="btn-find-wo" onclick="lookupTestResults()" title="ATP & Calibration test results">🧪 Test Results</button>
       </div>
     </div>
     <div class="card-body">
@@ -1039,6 +1040,60 @@ async function lookupDesignData() {
   } finally {
     btn.disabled = false;
     btn.textContent = '📋 Design Data & Approvals';
+  }
+}
+
+async function lookupTestResults() {
+  const partNum = (document.getElementById('partNumber').value || '').trim();
+  const banner = document.getElementById('batchBanner');
+  const btn = document.getElementById('findTestResultsBtn');
+
+  if (!partNum) {
+    banner.className = 'batch-banner warn';
+    banner.textContent = 'Please enter a Part Number in Step 1 first.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  banner.className = 'batch-banner';
+  banner.textContent = '';
+
+  try {
+    const url = `/api/lookup-test-results?partNumber=${encodeURIComponent(partNum)}`;
+    const resp = await fetch(url);
+    const result = await resp.json();
+
+    if (!result.found) {
+      banner.className = 'batch-banner warn';
+      banner.textContent = `⚠ No test results found for ${partNum}.`;
+      return;
+    }
+
+    // Build summary
+    let testInfo = '🧪 Test Results: ';
+    if (result.atp) {
+      testInfo += `ATP ${result.atp.passed}/${result.atp.totalTests} passed`;
+      if (result.atp.failed > 0) testInfo += ` (❌ ${result.atp.failed} FAILED)`;
+    }
+    if (result.calibration) {
+      testInfo += ` | CAL ${result.calibration.passed}/${result.calibration.totalTests} passed`;
+      if (result.calibration.failed > 0) testInfo += ` (❌ ${result.calibration.failed} FAILED)`;
+    }
+
+    // Determine status color
+    let hasFailures = false;
+    if (result.atp && result.atp.failed > 0) hasFailures = true;
+    if (result.calibration && result.calibration.failed > 0) hasFailures = true;
+
+    banner.className = hasFailures ? 'batch-banner error' : 'batch-banner success';
+    banner.textContent = testInfo + ` | Latest: ${result.atp?.latestTest?.timestamp || 'N/A'}`;
+  } catch (err) {
+    banner.className = 'batch-banner error';
+    banner.textContent = '❌ Test Results lookup error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🧪 Test Results';
   }
 }
 
