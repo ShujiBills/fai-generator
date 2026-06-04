@@ -10,6 +10,7 @@ const { lookupConcessionsData } = require('./lib/concessionsLookup');
 const { lookupDesignData } = require('./lib/designDataLookup');
 const { lookupUkFairsData } = require('./lib/ukFairsLookup');
 const { lookupTestResults } = require('./lib/testResultsLookup');
+const { getOcrCacheStats, clearOcrCache } = require('./lib/ocrUtil');
 const { parseTemplate, availableFields } = require('./lib/templateParser');
 
 const app = express();
@@ -121,6 +122,34 @@ app.get('/api/lookup-test-results', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('lookup-test-results error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get OCR cache statistics
+app.get('/api/ocr/stats', (req, res) => {
+  try {
+    const stats = getOcrCacheStats();
+    res.json({
+      status: 'OCR cache statistics',
+      ...stats
+    });
+  } catch (err) {
+    console.error('OCR stats error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Clear OCR cache
+app.post('/api/ocr/clear-cache', (req, res) => {
+  try {
+    clearOcrCache();
+    res.json({
+      status: 'success',
+      message: 'OCR cache cleared'
+    });
+  } catch (err) {
+    console.error('OCR clear cache error:', err);
     res.status(500).json({ error: err.message });
   }
 });
